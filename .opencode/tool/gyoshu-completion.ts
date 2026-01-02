@@ -7,7 +7,7 @@
 import { tool } from "@opencode-ai/plugin";
 import { durableAtomicWrite, fileExists, readFile } from "../lib/atomic-write";
 import { getLegacyManifestPath } from "../lib/paths";
-import { generateReport } from "../lib/report-markdown";
+import { generateReport, gatherReportContext, ReportContext } from "../lib/report-markdown";
 import { exportToPdf } from "../lib/pdf-export";
 
 interface KeyResult {
@@ -169,6 +169,12 @@ interface PdfResult {
   error?: string;
 }
 
+interface AIReportResult {
+  ready: boolean;
+  context?: ReportContext;
+  error?: string;
+}
+
 async function tryGenerateReport(
   reportTitle: string | undefined
 ): Promise<ReportResult> {
@@ -211,6 +217,21 @@ async function tryExportPdf(reportPath: string | undefined): Promise<PdfResult> 
     }
   } catch (err) {
     return { exported: false, error: (err as Error).message };
+  }
+}
+
+async function tryGatherAIContext(
+  reportTitle: string | undefined
+): Promise<AIReportResult> {
+  if (!reportTitle) {
+    return { ready: false, error: "No reportTitle provided for AI report context" };
+  }
+
+  try {
+    const context = await gatherReportContext(reportTitle);
+    return { ready: true, context };
+  } catch (err) {
+    return { ready: false, error: (err as Error).message };
   }
 }
 
@@ -261,10 +282,14 @@ export default tool({
       .string()
       .optional()
       .describe("Report title for report generation (e.g., 'my-research' for notebooks/my-research.ipynb)"),
+    useAIReport: tool.schema
+      .boolean()
+      .optional()
+      .describe("When true, gather context for AI-generated narrative report instead of rule-based report. Caller should invoke jogyo-paper-writer agent with the returned context."),
   },
 
   async execute(args) {
-    const { researchSessionID, status, summary, evidence, nextSteps, blockers, exportPdf, reportTitle } = args;
+    const { researchSessionID, status, summary, evidence, nextSteps, blockers, exportPdf, reportTitle, useAIReport } = args;
 
     validateSessionId(researchSessionID);
 
@@ -316,11 +341,17 @@ export default tool({
 
     let reportResult: ReportResult | undefined;
     let pdfResult: PdfResult | undefined;
+    let aiReportResult: AIReportResult | undefined;
+    
     if (valid && status === "SUCCESS") {
-      reportResult = await tryGenerateReport(reportTitle);
-      
-      if (exportPdf && reportResult.generated && reportResult.reportPath) {
-        pdfResult = await tryExportPdf(reportResult.reportPath);
+      if (useAIReport) {
+        aiReportResult = await tryGatherAIContext(reportTitle);
+      } else {
+        reportResult = await tryGenerateReport(reportTitle);
+        
+        if (exportPdf && reportResult.generated && reportResult.reportPath) {
+          pdfResult = await tryExportPdf(reportResult.reportPath);
+        }
       }
     }
 
@@ -351,6 +382,13 @@ export default tool({
 
     if (pdfResult) {
       response.pdf = pdfResult;
+    }
+
+    if (aiReportResult) {
+      response.aiReport = aiReportResult;
+      if (aiReportResult.ready) {
+        response.message = `Completion signal recorded: ${status}. AI report context gathered - invoke jogyo-paper-writer agent with the context.`;
+      }
     }
 
     return JSON.stringify(response, null, 2);

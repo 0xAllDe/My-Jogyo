@@ -45,6 +45,8 @@ import {
   ensureDirSync,
   existsSync,
   getSchemaVersion,
+  shortenSessionId,
+  clearRuntimeDirCache,
   type GyoshuConfig,
 } from "./paths";
 
@@ -55,37 +57,51 @@ import {
 let testDir: string;
 let originalCwd: string;
 let originalEnv: string | undefined;
+let originalRuntimeEnv: string | undefined;
+let originalXdgRuntime: string | undefined;
 
 beforeEach(async () => {
-  // Save original state
   originalCwd = process.cwd();
   originalEnv = process.env.GYOSHU_PROJECT_ROOT;
+  originalRuntimeEnv = process.env.GYOSHU_RUNTIME_DIR;
+  originalXdgRuntime = process.env.XDG_RUNTIME_DIR;
 
-  // Create a unique temp directory for each test
   testDir = await fsPromises.mkdtemp(
     path.join(os.tmpdir(), "gyoshu-paths-test-")
   );
 
-  // Clear any cached project root
   clearProjectRootCache();
+  clearRuntimeDirCache();
 
-  // Clear the env var
   delete process.env.GYOSHU_PROJECT_ROOT;
+  delete process.env.GYOSHU_RUNTIME_DIR;
+  delete process.env.XDG_RUNTIME_DIR;
 });
 
 afterEach(async () => {
-  // Restore original state
   process.chdir(originalCwd);
+  
   if (originalEnv !== undefined) {
     process.env.GYOSHU_PROJECT_ROOT = originalEnv;
   } else {
     delete process.env.GYOSHU_PROJECT_ROOT;
   }
+  
+  if (originalRuntimeEnv !== undefined) {
+    process.env.GYOSHU_RUNTIME_DIR = originalRuntimeEnv;
+  } else {
+    delete process.env.GYOSHU_RUNTIME_DIR;
+  }
+  
+  if (originalXdgRuntime !== undefined) {
+    process.env.XDG_RUNTIME_DIR = originalXdgRuntime;
+  } else {
+    delete process.env.XDG_RUNTIME_DIR;
+  }
 
-  // Clear cache after each test
   clearProjectRootCache();
+  clearRuntimeDirCache();
 
-  // Clean up the test directory
   if (testDir) {
     await fsPromises.rm(testDir, { recursive: true, force: true });
   }
@@ -385,7 +401,48 @@ describe("getResearchArtifactsDir", () => {
 // =============================================================================
 
 describe("getRuntimeDir", () => {
-  test("returns runtime directory path", () => {
+  test("respects GYOSHU_RUNTIME_DIR environment variable", () => {
+    const customRuntime = path.join(testDir, "custom-runtime");
+    fs.mkdirSync(customRuntime, { recursive: true });
+    process.env.GYOSHU_RUNTIME_DIR = customRuntime;
+
+    const runtimeDir = getRuntimeDir();
+
+    expect(runtimeDir).toBe(customRuntime);
+  });
+
+  test("uses XDG_RUNTIME_DIR when set", () => {
+    const xdgRuntime = path.join(testDir, "xdg-runtime");
+    fs.mkdirSync(xdgRuntime, { recursive: true });
+    process.env.XDG_RUNTIME_DIR = xdgRuntime;
+
+    const runtimeDir = getRuntimeDir();
+
+    expect(runtimeDir).toBe(path.join(xdgRuntime, "gyoshu"));
+  });
+
+  test("GYOSHU_RUNTIME_DIR takes priority over XDG_RUNTIME_DIR", () => {
+    const customRuntime = path.join(testDir, "custom");
+    const xdgRuntime = path.join(testDir, "xdg");
+    fs.mkdirSync(customRuntime, { recursive: true });
+    fs.mkdirSync(xdgRuntime, { recursive: true });
+    process.env.GYOSHU_RUNTIME_DIR = customRuntime;
+    process.env.XDG_RUNTIME_DIR = xdgRuntime;
+
+    const runtimeDir = getRuntimeDir();
+
+    expect(runtimeDir).toBe(customRuntime);
+  });
+
+  test("falls back to platform-specific cache directory", () => {
+    const runtimeDir = getRuntimeDir();
+
+    expect(path.isAbsolute(runtimeDir)).toBe(true);
+    expect(runtimeDir).toContain("gyoshu");
+    expect(runtimeDir).not.toContain("undefined");
+  });
+
+  test("returns path outside project root", () => {
     const projectDir = path.join(testDir, "project");
     fs.mkdirSync(projectDir, { recursive: true });
     process.env.GYOSHU_PROJECT_ROOT = projectDir;
@@ -393,52 +450,101 @@ describe("getRuntimeDir", () => {
 
     const runtimeDir = getRuntimeDir();
 
-    expect(runtimeDir).toBe(path.join(projectDir, "gyoshu", "runtime"));
+    expect(runtimeDir.startsWith(projectDir)).toBe(false);
+  });
+});
+
+describe("shortenSessionId", () => {
+  test("returns short session IDs unchanged", () => {
+    expect(shortenSessionId("abc123")).toBe("abc123");
+    expect(shortenSessionId("session")).toBe("session");
+    expect(shortenSessionId("12chars1234")).toBe("12chars1234");
+  });
+
+  test("hashes long session IDs to 12 characters", () => {
+    const longId = "very-long-session-id-that-exceeds-12-characters-and-more";
+    const shortId = shortenSessionId(longId);
+
+    expect(shortId.length).toBe(12);
+    expect(/^[0-9a-f]{12}$/.test(shortId)).toBe(true);
+  });
+
+  test("produces consistent hashes for same input", () => {
+    const longId = "consistent-session-id-for-testing";
+    const hash1 = shortenSessionId(longId);
+    const hash2 = shortenSessionId(longId);
+
+    expect(hash1).toBe(hash2);
+  });
+
+  test("produces different hashes for different inputs", () => {
+    const hash1 = shortenSessionId("session-one-long-name");
+    const hash2 = shortenSessionId("session-two-long-name");
+
+    expect(hash1).not.toBe(hash2);
   });
 });
 
 describe("getSessionDir", () => {
-  test("returns session directory for a specific session", () => {
-    const projectDir = path.join(testDir, "project");
-    fs.mkdirSync(projectDir, { recursive: true });
-    process.env.GYOSHU_PROJECT_ROOT = projectDir;
-    clearProjectRootCache();
+  test("returns session directory with short session ID", () => {
+    const customRuntime = path.join(testDir, "runtime");
+    fs.mkdirSync(customRuntime, { recursive: true });
+    process.env.GYOSHU_RUNTIME_DIR = customRuntime;
 
-    const sessionDir = getSessionDir("session-abc123");
+    const sessionDir = getSessionDir("short-id");
 
-    expect(sessionDir).toBe(
-      path.join(projectDir, "gyoshu", "runtime", "session-abc123")
-    );
+    expect(sessionDir).toBe(path.join(customRuntime, "short-id"));
+  });
+
+  test("hashes long session IDs for socket path safety", () => {
+    const customRuntime = path.join(testDir, "runtime");
+    fs.mkdirSync(customRuntime, { recursive: true });
+    process.env.GYOSHU_RUNTIME_DIR = customRuntime;
+
+    const longSessionId = "very-long-session-id-that-would-cause-socket-path-issues";
+    const sessionDir = getSessionDir(longSessionId);
+
+    expect(sessionDir.length).toBeLessThan(customRuntime.length + 20);
+    expect(sessionDir.startsWith(customRuntime)).toBe(true);
   });
 });
 
 describe("getSessionLockPath", () => {
-  test("returns session.lock path for a session", () => {
-    const projectDir = path.join(testDir, "project");
-    fs.mkdirSync(projectDir, { recursive: true });
-    process.env.GYOSHU_PROJECT_ROOT = projectDir;
-    clearProjectRootCache();
+  test("returns session.lock path in session directory", () => {
+    const customRuntime = path.join(testDir, "runtime");
+    fs.mkdirSync(customRuntime, { recursive: true });
+    process.env.GYOSHU_RUNTIME_DIR = customRuntime;
 
-    const lockPath = getSessionLockPath("session-xyz");
+    const lockPath = getSessionLockPath("test-session");
 
     expect(lockPath).toBe(
-      path.join(projectDir, "gyoshu", "runtime", "session-xyz", "session.lock")
+      path.join(customRuntime, "test-session", "session.lock")
     );
   });
 });
 
 describe("getBridgeSocketPath", () => {
-  test("returns bridge.sock path for a session", () => {
-    const projectDir = path.join(testDir, "project");
-    fs.mkdirSync(projectDir, { recursive: true });
-    process.env.GYOSHU_PROJECT_ROOT = projectDir;
-    clearProjectRootCache();
+  test("returns bridge.sock path in session directory", () => {
+    const customRuntime = path.join(testDir, "runtime");
+    fs.mkdirSync(customRuntime, { recursive: true });
+    process.env.GYOSHU_RUNTIME_DIR = customRuntime;
 
-    const socketPath = getBridgeSocketPath("session-xyz");
+    const socketPath = getBridgeSocketPath("test-session");
 
     expect(socketPath).toBe(
-      path.join(projectDir, "gyoshu", "runtime", "session-xyz", "bridge.sock")
+      path.join(customRuntime, "test-session", "bridge.sock")
     );
+  });
+
+  test("socket path length stays within Unix limits", () => {
+    const customRuntime = path.join(testDir, "runtime");
+    fs.mkdirSync(customRuntime, { recursive: true });
+    process.env.GYOSHU_RUNTIME_DIR = customRuntime;
+
+    const longSessionId = "extremely-long-session-id-that-would-normally-exceed-unix-socket-path-limits-of-108-bytes";
+    const socketPath = getBridgeSocketPath(longSessionId);
+
+    expect(socketPath.length).toBeLessThan(108);
   });
 });
 
@@ -763,7 +869,7 @@ describe("getSchemaVersion", () => {
 // =============================================================================
 
 describe("path consistency", () => {
-  test("all paths use consistent root", () => {
+  test("project paths use consistent root", () => {
     const projectDir = path.join(testDir, "consistent");
     fs.mkdirSync(projectDir, { recursive: true });
     process.env.GYOSHU_PROJECT_ROOT = projectDir;
@@ -771,13 +877,26 @@ describe("path consistency", () => {
 
     const gyoshuRoot = getGyoshuRoot();
     const researchDir = getResearchDir();
-    const runtimeDir = getRuntimeDir();
     const retroDir = getRetrospectivesDir();
 
-    // All should start with the same gyoshu root
     expect(researchDir.startsWith(gyoshuRoot)).toBe(true);
-    expect(runtimeDir.startsWith(gyoshuRoot)).toBe(true);
     expect(retroDir.startsWith(gyoshuRoot)).toBe(true);
+  });
+
+  test("runtime is separate from project root", () => {
+    const projectDir = path.join(testDir, "separate");
+    const runtimeEnvDir = path.join(testDir, "runtime-env");
+    fs.mkdirSync(projectDir, { recursive: true });
+    fs.mkdirSync(runtimeEnvDir, { recursive: true });
+    process.env.GYOSHU_PROJECT_ROOT = projectDir;
+    process.env.GYOSHU_RUNTIME_DIR = runtimeEnvDir;
+    clearProjectRootCache();
+
+    const gyoshuRoot = getGyoshuRoot();
+    const runtimeDir = getRuntimeDir();
+
+    expect(runtimeDir.startsWith(gyoshuRoot)).toBe(false);
+    expect(runtimeDir).toBe(runtimeEnvDir);
   });
 
   test("research paths are nested correctly", () => {
@@ -795,7 +914,6 @@ describe("path consistency", () => {
     const notebooksDir = getResearchNotebooksDir(researchId);
     const artifactsDir = getResearchArtifactsDir(researchId);
 
-    // All should be under the research path
     expect(manifestPath.startsWith(researchPath)).toBe(true);
     expect(runPath.startsWith(researchPath)).toBe(true);
     expect(notebooksDir.startsWith(researchPath)).toBe(true);
@@ -803,10 +921,9 @@ describe("path consistency", () => {
   });
 
   test("session paths are nested under runtime", () => {
-    const projectDir = path.join(testDir, "session-nesting");
-    fs.mkdirSync(projectDir, { recursive: true });
-    process.env.GYOSHU_PROJECT_ROOT = projectDir;
-    clearProjectRootCache();
+    const runtimeEnvDir = path.join(testDir, "session-runtime");
+    fs.mkdirSync(runtimeEnvDir, { recursive: true });
+    process.env.GYOSHU_RUNTIME_DIR = runtimeEnvDir;
 
     const sessionId = "test-session";
     const runtimeDir = getRuntimeDir();

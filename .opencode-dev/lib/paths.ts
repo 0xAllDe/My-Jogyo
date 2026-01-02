@@ -6,32 +6,38 @@
  *
  * Storage Structure:
  * ```
+ * Project Root (durable, tracked):
  * ./notebooks/                       # Flat notebook storage
  * └── {reportTitle}.ipynb            # One notebook per analysis
- *
  * ./reports/                         # Report outputs (mirrors notebooks)
  * └── {reportTitle}/
  *     ├── README.md                  # The markdown report
  *     └── {assets}                   # Figures, exports, etc.
  *
- * ./gyoshu/                          # Runtime only (gitignored)
- * ├── .gitignore                     # Ignores everything below
- * └── runtime/{sessionId}/           # Ephemeral session data
+ * OS Temp Directory (ephemeral, not in project):
+ * $XDG_RUNTIME_DIR/gyoshu/           # Linux: /run/user/{uid}/gyoshu
+ * ~/Library/Caches/gyoshu/runtime/   # macOS
+ * ~/.cache/gyoshu/runtime/           # Linux fallback
+ * └── {shortSessionId}/              # Ephemeral session data
  *     ├── bridge.sock                # Python REPL socket
  *     ├── session.lock               # Session lock
  *     └── bridge_meta.json           # Runtime state
  * ```
  *
- * Root Detection Strategy (in order):
+ * Runtime Directory Resolution (in order):
+ * 1. GYOSHU_RUNTIME_DIR environment variable (explicit override)
+ * 2. XDG_RUNTIME_DIR/gyoshu (Linux standard)
+ * 3. Platform-specific cache directory
+ * 4. os.tmpdir()/gyoshu/runtime fallback
+ *
+ * Project Root Detection (in order):
  * 1. GYOSHU_PROJECT_ROOT environment variable (explicit override)
  * 2. Walk up directories looking for ./gyoshu/config.json (legacy marker)
  * 3. Walk up directories looking for .git
  * 4. Fall back to current working directory
  *
- * Note: Research metadata is stored in notebook YAML frontmatter, not separate
- * JSON files. The gyoshu/ directory contains only ephemeral runtime data.
- * Legacy research at ./gyoshu/research/ or ~/.gyoshu/sessions/ is still
- * readable; use /gyoshu migrate to move to the notebook-centric structure.
+ * Note: Session IDs are hashed to short 12-char IDs to respect Unix socket
+ * path length limits (UNIX_PATH_MAX is 108 on Linux, 104 on macOS).
  *
  * @module paths
  */
@@ -39,6 +45,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
+import * as crypto from "crypto";
 
 // =============================================================================
 // CONSTANTS
@@ -59,6 +66,24 @@ const CONFIG_FILE_NAME = "config.json";
  * Environment variable for explicit project root override.
  */
 const ENV_PROJECT_ROOT = "GYOSHU_PROJECT_ROOT";
+
+/**
+ * Environment variable for explicit runtime directory override.
+ * Takes highest priority for runtime directory location.
+ */
+const ENV_RUNTIME_DIR = "GYOSHU_RUNTIME_DIR";
+
+/**
+ * Maximum length for Unix socket paths (Linux: 108, macOS: 104).
+ * We use a conservative value that works on both platforms.
+ */
+const MAX_SOCKET_PATH_LENGTH = 100;
+
+/**
+ * Length of the short session ID hash used for socket paths.
+ * 12 hex chars = 6 bytes = 281 trillion possible values, negligible collision risk.
+ */
+const SHORT_SESSION_ID_LENGTH = 12;
 
 /**
  * Current Gyoshu version string.
@@ -332,48 +357,104 @@ export function getResearchArtifactsDir(researchId: string): string {
 }
 
 // =============================================================================
-// RUNTIME PATH GETTERS (EPHEMERAL - GITIGNORED)
+// RUNTIME PATH GETTERS (EPHEMERAL - OS TEMP DIRECTORIES)
 // =============================================================================
 
 /**
  * Get the path to the runtime directory.
  * Contains ephemeral session data like locks and sockets.
- * This directory should be gitignored.
+ * Uses OS-appropriate temp directories instead of project root.
  *
- * @returns Path to `./gyoshu/runtime/`
+ * Priority:
+ * 1. GYOSHU_RUNTIME_DIR environment variable (explicit override)
+ * 2. XDG_RUNTIME_DIR (Linux standard, usually /run/user/{uid})
+ * 3. Platform-specific user cache directory
+ * 4. os.tmpdir() fallback
+ *
+ * @returns Path to runtime directory (outside project root)
  *
  * @example
  * getRuntimeDir();
- * // Returns: '/home/user/my-project/gyoshu/runtime'
+ * // Linux with XDG: '/run/user/1000/gyoshu'
+ * // macOS: '/Users/name/Library/Caches/gyoshu/runtime'
+ * // Fallback: '/tmp/gyoshu/runtime'
  */
 export function getRuntimeDir(): string {
-  return path.join(getGyoshuRoot(), "runtime");
+  // Priority 1: Explicit override via environment variable
+  const envRuntime = process.env[ENV_RUNTIME_DIR];
+  if (envRuntime) {
+    return envRuntime;
+  }
+
+  // Priority 2: XDG_RUNTIME_DIR (Linux standard, usually /run/user/{uid})
+  const xdgRuntime = process.env.XDG_RUNTIME_DIR;
+  if (xdgRuntime) {
+    return path.join(xdgRuntime, "gyoshu");
+  }
+
+  // Priority 3: Platform-specific user cache directory
+  const platform = process.platform;
+  if (platform === "darwin") {
+    return path.join(os.homedir(), "Library", "Caches", "gyoshu", "runtime");
+  } else if (platform === "win32") {
+    const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local");
+    return path.join(localAppData, "gyoshu", "runtime");
+  } else if (platform === "linux") {
+    // Linux - use ~/.cache/gyoshu/runtime
+    return path.join(os.homedir(), ".cache", "gyoshu", "runtime");
+  }
+
+  // Priority 4: Final fallback to os.tmpdir() for any other platform
+  return path.join(os.tmpdir(), "gyoshu", "runtime");
+}
+
+/**
+ * Shorten a session ID to fit within Unix socket path constraints.
+ * Uses SHA256 hash truncated to 12 hex chars (48 bits).
+ *
+ * Unix sockets have path length limits (UNIX_PATH_MAX):
+ * - Linux: 108 bytes
+ * - macOS: 104 bytes
+ *
+ * @param sessionId - Original session identifier (can be any length)
+ * @returns Short identifier (12 hex chars) suitable for socket paths
+ */
+export function shortenSessionId(sessionId: string): string {
+  if (sessionId.length <= SHORT_SESSION_ID_LENGTH) {
+    return sessionId;
+  }
+  return crypto
+    .createHash("sha256")
+    .update(sessionId)
+    .digest("hex")
+    .slice(0, SHORT_SESSION_ID_LENGTH);
+}
+
+/**
+ * Clear any runtime directory cache (no-op currently, env vars are read dynamically).
+ * Provided for test compatibility with clearProjectRootCache().
+ */
+export function clearRuntimeDirCache(): void {
+  // No-op: getRuntimeDir reads env vars dynamically, no caching needed
 }
 
 /**
  * Get the path to a specific session's runtime directory.
- * Contains session-specific ephemeral files.
+ * Uses shortened session ID to ensure socket paths stay within limits.
  *
  * @param sessionId - Unique identifier for the session
- * @returns Path to `./gyoshu/runtime/{sessionId}/`
- *
- * @example
- * getSessionDir('session-abc123');
- * // Returns: '/home/user/my-project/gyoshu/runtime/session-abc123'
+ * @returns Path to runtime/{shortId}/ in OS temp directory
  */
 export function getSessionDir(sessionId: string): string {
-  return path.join(getRuntimeDir(), sessionId);
+  const shortId = shortenSessionId(sessionId);
+  return path.join(getRuntimeDir(), shortId);
 }
 
 /**
  * Get the path to a session's lock file.
  *
  * @param sessionId - Unique identifier for the session
- * @returns Path to `./gyoshu/runtime/{sessionId}/session.lock`
- *
- * @example
- * getSessionLockPath('session-abc123');
- * // Returns: '/home/user/my-project/gyoshu/runtime/session-abc123/session.lock'
+ * @returns Path to session.lock in session's runtime directory
  */
 export function getSessionLockPath(sessionId: string): string {
   return path.join(getSessionDir(sessionId), "session.lock");
@@ -381,13 +462,10 @@ export function getSessionLockPath(sessionId: string): string {
 
 /**
  * Get the path to a session's bridge socket.
+ * Path is kept short to respect Unix socket path limits (~108 bytes).
  *
  * @param sessionId - Unique identifier for the session
- * @returns Path to `./gyoshu/runtime/{sessionId}/bridge.sock`
- *
- * @example
- * getBridgeSocketPath('session-abc123');
- * // Returns: '/home/user/my-project/gyoshu/runtime/session-abc123/bridge.sock'
+ * @returns Path to bridge.sock in session's runtime directory
  */
 export function getBridgeSocketPath(sessionId: string): string {
   return path.join(getSessionDir(sessionId), "bridge.sock");

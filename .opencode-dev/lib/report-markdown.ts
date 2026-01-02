@@ -34,6 +34,37 @@ export interface ArtifactEntry {
   description?: string;
 }
 
+/**
+ * Context object containing all research data suitable for AI report generation.
+ * This structured format allows the AI paper writer to generate narrative reports.
+ */
+export interface ReportContext {
+  /** Research title derived from reportTitle or slug */
+  title: string;
+  /** Primary research objective */
+  objective: string;
+  /** List of hypotheses tested */
+  hypotheses: string[];
+  /** Description of methodology used (if available) */
+  methodology: string;
+  /** Key findings discovered during research */
+  findings: string[];
+  /** Named metrics with values */
+  metrics: Array<{ name: string; value: string }>;
+  /** Known limitations of the research */
+  limitations: string[];
+  /** Suggested next steps */
+  nextSteps: string[];
+  /** Artifacts created during research */
+  artifacts: ArtifactEntry[];
+  /** Combined raw cell outputs for additional context */
+  rawOutputs: string;
+  /** Notebook frontmatter metadata */
+  frontmatter?: GyoshuFrontmatter;
+  /** Conclusion statement if available */
+  conclusion?: string;
+}
+
 export interface MetricEntry {
   name: string;
   value: string;
@@ -336,6 +367,94 @@ export async function readExistingReport(reportPath: string): Promise<string | n
   } catch {
     return null;
   }
+}
+
+function extractRawOutputsFromNotebook(notebook: Notebook): string {
+  const outputs: string[] = [];
+
+  for (const cell of notebook.cells) {
+    if (cell.cell_type !== "code" || !cell.outputs) continue;
+
+    for (const output of cell.outputs as Array<Record<string, unknown>>) {
+      if (output.output_type === "stream" && output.name === "stdout") {
+        const text = Array.isArray(output.text)
+          ? (output.text as string[]).join("")
+          : String(output.text || "");
+        outputs.push(text);
+      }
+    }
+  }
+
+  return outputs.join("\n");
+}
+
+function formatTitleFromSlug(slug: string): string {
+  return slug
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+export async function gatherReportContext(reportTitle: string): Promise<ReportContext> {
+  const notebookPath = getNotebookPath(reportTitle);
+  const reportDir = getReportDir(reportTitle);
+
+  let notebook: Notebook;
+  try {
+    const content = await fs.readFile(notebookPath, "utf-8");
+    notebook = JSON.parse(content) as Notebook;
+  } catch (e) {
+    throw new Error(`Failed to read notebook for context: ${(e as Error).message}`);
+  }
+
+  const frontmatter = extractFrontmatter(notebook);
+  const markers = extractMarkersFromNotebook(notebook);
+  const artifacts = await scanOutputsDirectory(reportDir);
+
+  // SECURITY: rawOutputs is untrusted notebook output - do not execute as code.
+  // Limit size to prevent memory issues with large outputs.
+  const MAX_RAW_OUTPUT_LENGTH = 10000;
+  const allOutputText = extractRawOutputsFromNotebook(notebook);
+  const rawOutputs = allOutputText.slice(0, MAX_RAW_OUTPUT_LENGTH);
+
+  const objectives = getMarkersByType(markers, "OBJECTIVE");
+  const hypotheses = getMarkersByType(markers, "HYPOTHESIS");
+  const findings = getMarkersByType(markers, "FINDING");
+  const conclusions = getMarkersByType(markers, "CONCLUSION");
+  const metrics = getMarkersByType(markers, "METRIC");
+  const limitations = getMarkersByType(markers, "LIMITATION");
+  const nextSteps = getMarkersByType(markers, "NEXT_STEP");
+  const experiments = getMarkersByType(markers, "EXPERIMENT");
+  const analyses = getMarkersByType(markers, "ANALYSIS");
+
+  const titleSource = frontmatter?.reportTitle || frontmatter?.slug || reportTitle;
+  const title = formatTitleFromSlug(titleSource);
+
+  const methodologyParts: string[] = [];
+  if (experiments.length > 0) {
+    methodologyParts.push(...experiments.map((m) => m.content));
+  }
+  if (analyses.length > 0 && methodologyParts.length === 0) {
+    methodologyParts.push(analyses[0]?.content || "");
+  }
+
+  return {
+    title,
+    objective: objectives[0]?.content || "",
+    hypotheses: hypotheses.map((m) => m.content),
+    methodology: methodologyParts.join(" "),
+    findings: findings.map((m) => m.content),
+    metrics: metrics.map((m) => ({
+      name: m.subtype || "metric",
+      value: m.content,
+    })),
+    limitations: limitations.map((m) => m.content),
+    nextSteps: nextSteps.map((m) => m.content),
+    artifacts,
+    rawOutputs,
+    frontmatter,
+    conclusion: conclusions[conclusions.length - 1]?.content,
+  };
 }
 
 export function upsertSentinelBlock(

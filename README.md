@@ -195,11 +195,19 @@ Gyoshu uses a **notebook-centric architecture** where research metadata is store
 Gyoshu/
 ├── notebooks/                    # Research notebooks (*.ipynb)
 │   └── README.md                 # Auto-generated index
-├── reports/                      # Research reports and artifacts
-│   └── {reportTitle}/            # Figures, models, report.md
-└── gyoshu/                       # Runtime only (gitignored)
-    └── runtime/                  # Ephemeral session data
+└── reports/                      # Research reports and artifacts
+    └── {reportTitle}/            # Figures, models, report.md
 ```
+
+### Runtime Data (Ephemeral)
+
+Runtime data (session locks, bridge sockets) is stored in OS-appropriate temp directories, NOT in the project root:
+
+- **Linux**: `$XDG_RUNTIME_DIR/gyoshu/` or `~/.cache/gyoshu/runtime/`
+- **macOS**: `~/Library/Caches/gyoshu/runtime/`
+- **Override**: Set `GYOSHU_RUNTIME_DIR` environment variable
+
+Session IDs are hashed to 12 characters for Unix socket path limits.
 
 ### Self-Describing Notebooks
 

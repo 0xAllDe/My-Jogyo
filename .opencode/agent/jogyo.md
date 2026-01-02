@@ -317,6 +317,40 @@ This generates:
 - `reports/iris-correlation-analysis/README.md` (markdown report)
 - `reports/iris-correlation-analysis/report.pdf` (PDF export)
 
+### AI-Generated Narrative Reports
+
+For higher-quality narrative reports (instead of rule-based templated output), use `useAIReport: true`:
+
+```
+gyoshu_completion(
+  researchSessionID: "<session-id>",
+  status: "SUCCESS",
+  summary: "Confirmed strong positive correlation (r=0.87, p<0.001) between sepal and petal length",
+  reportTitle: "iris-correlation-analysis",
+  evidence: {
+    executedCellIds: ["cell_001", "cell_002", "cell_003"],
+    artifactPaths: ["reports/iris-correlation-analysis/correlation_plot.png"],
+    keyResults: [
+      {"name": "correlation", "value": "0.87", "type": "float"},
+      {"name": "p_value", "value": "0.001", "type": "float"}
+    ]
+  },
+  useAIReport: true
+)
+```
+
+When `useAIReport: true`:
+1. The tool gathers structured context from the notebook (via `gatherReportContext()`)
+2. Returns the context in `aiReport.context` field
+3. The planner/caller should then invoke `@jogyo-paper-writer` with this context
+4. The paper writer generates a professional narrative report
+
+**AI-generated reports produce:**
+- Natural prose instead of bullet lists
+- Integrated metrics and explanations
+- Coherent narrative flow from objective to conclusion
+- Professional scientific writing style
+
 ### Validation Rules
 
 The tool validates your completion signal:

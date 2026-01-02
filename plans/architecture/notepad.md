@@ -42,7 +42,92 @@
 
 Time taken: ~15 minutes
 
-[2026-01-01 08:30] - Tasks 12 & 13: Session Simplification
+[2026-01-01 17:30] - Task 3: Update Documentation - AGENTS.md, README.md
+
+### DISCOVERED ISSUES
+- AGENTS.md already had the Ephemeral section updated for OS temp directories (lines 443-466)
+- README.md still referenced `gyoshu/runtime/` in project root (lines 194-202)
+- Implementation code exists in `.opencode-dev/` (development version), not `.opencode/` (production)
+- The jogyo-paper-writer agent mentioned in directive does not exist in codebase (likely planned for future)
+
+### IMPLEMENTATION DECISIONS
+- Updated README.md "Research Storage" section to remove `gyoshu/runtime/` reference
+- Added new "Runtime Data (Ephemeral)" subsection with OS temp directory locations
+- Documented: Linux XDG_RUNTIME_DIR, Linux fallback (~/.cache), macOS (~/Library/Caches)
+- Included GYOSHU_RUNTIME_DIR environment variable override
+- Mentioned session ID hashing to 12 chars for Unix socket path limits
+- Did NOT add AI report documentation since the feature doesn't exist yet in codebase
+
+### PROBLEMS FOR NEXT TASKS
+- AI report generation (jogyo-paper-writer, useAIReport, gatherReportContext) needs to be implemented
+- When AI report features are added, documentation should be updated accordingly
+- Production `.opencode/` directory still has old paths.ts - needs to be synced from `.opencode-dev/`
+
+### VERIFICATION RESULTS
+- Ran: `cd .opencode-dev && bun test` (383 pass, 0 fail, 925 expect() calls)
+- Ran: `pytest -v --tb=short` (50 pass, all Python tests)
+- Tests in main `tests/` directory show 122 pass, 5 errors (pre-existing module resolution issues)
+- README.md updated: Research Storage section now consistent with AGENTS.md Ephemeral section
+
+### LEARNINGS
+- [PROMOTE:PAT] Pattern: Development vs Production directories (.opencode-dev vs .opencode)
+  - Evidence: git diff shows changes in .opencode-dev/, production uses .opencode/
+  - Use case: Development can proceed without affecting production users
+- [PROMOTE:GOTCHA] Problem: Documentation can get ahead of implementation
+  - Symptoms: AGENTS.md documents OS temp dirs but .opencode/lib/paths.ts still uses ./gyoshu/runtime
+  - Solution: Verify documentation matches actual code, or clearly note planned vs implemented features
+
+Time taken: ~15 minutes
+
+
+### DISCOVERED ISSUES
+- No pre-existing issues discovered in the codebase
+- Existing report-markdown.ts was well-structured with clear marker extraction patterns
+- gyoshu-completion.ts already had report generation integration
+
+### IMPLEMENTATION DECISIONS
+- Created new agent: `.opencode-dev/agent/jogyo-paper-writer.md`
+  - Uses `anthropic/claude-sonnet-4-5-high` model (matches other jogyo agents)
+  - Temperature 0.4 for balanced creativity/accuracy
+  - Write permissions limited to `./reports/**`
+  - Comprehensive style guidelines for narrative prose
+- Added `ReportContext` interface to `report-markdown.ts`
+  - Contains: title, objective, hypotheses, methodology, findings, metrics, limitations, nextSteps, artifacts, rawOutputs, frontmatter, conclusion
+  - Structured format suitable for AI consumption
+- Added `gatherReportContext()` function
+  - Reads notebook and extracts all markers
+  - Combines cell outputs for additional context
+  - Extracts methodology from EXPERIMENT/ANALYSIS markers
+- Added `useAIReport: boolean` flag to gyoshu-completion tool
+  - When true, gathers context instead of generating rule-based report
+  - Returns context in `aiReport.context` for caller to use with paper-writer agent
+  - Backwards compatible: defaults to false (rule-based)
+- Updated jogyo.md with AI report documentation section
+
+### PROBLEMS FOR NEXT TASKS
+- Planner (gyoshu.md) should be updated to handle AI report flow when completion returns `aiReport.ready: true`
+- Consider adding automatic paper-writer invocation in future iteration
+
+### VERIFICATION RESULTS
+- Ran: `cd .opencode-dev && bun test` (383 pass, 0 fail, 925 expect() calls)
+- Created: .opencode-dev/agent/jogyo-paper-writer.md (179 lines)
+- Modified: .opencode-dev/lib/report-markdown.ts (added ReportContext interface + gatherReportContext function)
+- Modified: .opencode-dev/tool/gyoshu-completion.ts (added useAIReport parameter)
+- Modified: .opencode-dev/agent/jogyo.md (added AI-Generated Narrative Reports section)
+
+### LEARNINGS
+- [PROMOTE:PAT] Pattern: Agent files for specialized tasks use narrow tool permissions
+  - Evidence: jogyo-paper-writer.md only allows write to ./reports/**
+  - Use case: Paper writer only needs to write reports, not access REPL or other tools
+- [PROMOTE:PAT] Pattern: Context gathering function for AI consumption
+  - Evidence: report-markdown.ts:gatherReportContext() creates structured JSON for AI
+  - Use case: Transform marker-extracted data into AI-friendly format
+- [PROMOTE:CONV] Convention: New boolean flags default to false for backwards compatibility
+  - Evidence: gyoshu-completion.ts useAIReport defaults to undefined (falsy)
+  - Existing workflows unchanged
+
+Time taken: ~25 minutes
+
 
 ### DISCOVERED ISSUES
 - No pre-existing issues discovered

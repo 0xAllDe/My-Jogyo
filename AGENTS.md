@@ -440,18 +440,30 @@ Gyoshu/
 └── ...
 ```
 
-### Ephemeral (Gitignored)
+### Ephemeral (OS Temp Directory)
+
+Runtime data is stored in OS-appropriate temp directories, NOT in the project root:
 
 ```
-Gyoshu/
-└── gyoshu/                       # Runtime only (gitignored)
-    ├── .gitignore                # Ignores everything below
-    └── runtime/                  # Ephemeral runtime data
-        └── {sessionId}/
-            ├── bridge.sock       # Python REPL socket
-            ├── session.lock      # Session lock
-            └── bridge_meta.json  # Runtime state
+Linux (with XDG_RUNTIME_DIR):
+$XDG_RUNTIME_DIR/gyoshu/          # Usually /run/user/{uid}/gyoshu
+└── {shortSessionId}/
+    ├── bridge.sock               # Python REPL socket
+    ├── session.lock              # Session lock
+    └── bridge_meta.json          # Runtime state
+
+macOS:
+~/Library/Caches/gyoshu/runtime/
+└── {shortSessionId}/...
+
+Linux (fallback):
+~/.cache/gyoshu/runtime/
+└── {shortSessionId}/...
 ```
+
+**Environment Variable Override**: Set `GYOSHU_RUNTIME_DIR` to force a custom location.
+
+**Note**: Session IDs are hashed to 12 characters to respect Unix socket path limits (~108 bytes).
 
 ## Notebook-Centric Architecture
 

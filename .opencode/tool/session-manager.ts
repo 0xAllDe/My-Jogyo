@@ -7,7 +7,8 @@
  * - Bridge metadata storage (runtime state only)
  *
  * Note: Durable research data is now stored in notebook frontmatter.
- * This tool only manages ephemeral runtime state in gyoshu/runtime/.
+ * This tool only manages ephemeral runtime state in OS temp directories
+ * (see paths.ts getRuntimeDir() for resolution order).
  *
  * @module session-manager
  */
@@ -20,7 +21,6 @@ import { durableAtomicWrite, fileExists, readFile } from "../lib/atomic-write";
 import {
   getRuntimeDir,
   getSessionDir,
-  getGyoshuRoot,
   ensureDirSync,
   existsSync,
 } from "../lib/paths";
@@ -69,46 +69,20 @@ interface BridgeMeta {
 // ===== RUNTIME INITIALIZATION =====
 
 /**
- * Ensures the gyoshu runtime directory exists with proper .gitignore.
- * Creates the minimal structure:
- *
- * gyoshu/
- * ├── .gitignore           # Ignores everything
- * └── runtime/             # Ephemeral session data
+ * Ensures the runtime directory exists.
+ * Runtime is now in OS temp directories, no .gitignore needed.
  */
 async function ensureGyoshuRuntime(): Promise<void> {
-  const gyoshuRoot = getGyoshuRoot();
   const runtimeDir = getRuntimeDir();
-
   await fs.mkdir(runtimeDir, { recursive: true });
-
-  const gitignorePath = path.join(gyoshuRoot, ".gitignore");
-  if (!existsSync(gitignorePath)) {
-    await fs.writeFile(
-      gitignorePath,
-      "# Gyoshu runtime - always gitignored\n*\n",
-      "utf-8"
-    );
-  }
 }
 
 /**
  * Synchronous version for initialization in execute()
  */
 function ensureGyoshuRuntimeSync(): void {
-  const gyoshuRoot = getGyoshuRoot();
   const runtimeDir = getRuntimeDir();
-
   ensureDirSync(runtimeDir);
-
-  const gitignorePath = path.join(gyoshuRoot, ".gitignore");
-  if (!existsSync(gitignorePath)) {
-    fsSync.writeFileSync(
-      gitignorePath,
-      "# Gyoshu runtime - always gitignored\n*\n",
-      "utf-8"
-    );
-  }
 }
 
 // ===== PATH HELPERS =====
