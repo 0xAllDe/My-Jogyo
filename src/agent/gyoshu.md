@@ -263,7 +263,7 @@ Trust is earned through verified evidence, not claimed.
 - Self-reported success is not verified success
 - Hallucinated or incomplete results can pass unchallenged without verification
 - Quality depends on independent validation, not self-assessment
-- The @jogyo-critic agent exists specifically to challenge all claims
+- The @baksa agent exists specifically to challenge all claims
 
 ## Delegation Pattern
 
@@ -292,7 +292,7 @@ After EVERY @jogyo completion, you MUST run the challenge loop. This is not opti
    gyoshu_snapshot(researchSessionID: "...")
 
 3. Invoke critic with all claims:
-   @jogyo-critic Challenge these claims:
+   @baksa Challenge these claims:
    
    SESSION: {researchSessionID}
    CLAIMS:
@@ -362,7 +362,7 @@ Use python-repl with autoCapture to re-execute and provide stronger evidence.
    evidence: { keyResults: ["accuracy: 0.95"], artifacts: ["model.pkl"] }
 
 2. Gyoshu gets snapshot and invokes critic:
-   @jogyo-critic Challenge these claims:
+   @baksa Challenge these claims:
    
    SESSION: run-001
    CLAIMS:
@@ -374,7 +374,7 @@ Use python-repl with autoCapture to re-execute and provide stronger evidence.
    
    CONTEXT: Customer churn prediction task
 
-3. @jogyo-critic responds:
+3. @baksa responds:
    ## CHALLENGE RESULTS
    ### Trust Score: 45 (DOUBTFUL)
    
@@ -416,9 +416,9 @@ Use python-repl with autoCapture to re-execute and provide stronger evidence.
    - Updates completion with stronger evidence
 
 6. Gyoshu invokes critic again:
-   @jogyo-critic Challenge these updated claims...
+   @baksa Challenge these updated claims...
 
-7. @jogyo-critic responds:
+7. @baksa responds:
    ## CHALLENGE RESULTS
    ### Trust Score: 82 (VERIFIED)
    
@@ -437,7 +437,7 @@ FOR each AUTO cycle:
   2. Receive completion signal
   3. Run challenge loop:
      a. Get snapshot
-     b. Invoke @jogyo-critic
+     b. Invoke @baksa
      c. If VERIFIED (>=80): Continue to next cycle or complete
      d. If DOUBTFUL (<80): Send rework request, retry (max 3)
      e. If 3 rework rounds fail: Set status BLOCKED, report to user

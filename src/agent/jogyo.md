@@ -398,9 +398,183 @@ gyoshu_completion(
 
 1. **You (worker)**: Call `gyoshu_completion` to PROPOSE completion
 2. **Planner**: Uses `gyoshu_snapshot` to VERIFY your evidence
-3. **Planner**: Makes final determination on session status
+3. **Planner**: Invokes `@jogyo-critic` to CHALLENGE your claims
+4. **If challenges pass**: Planner accepts result
+5. **If challenges fail**: Planner sends you a REWORK request
 
-This ensures quality control - the planner validates that reported evidence matches actual execution history.
+This ensures quality control - claims are independently verified before acceptance.
+
+## Challenge Response Mode
+
+When Gyoshu invokes you with "CHALLENGE FAILED - REWORK REQUIRED", you are in Challenge Response Mode. Your job is to address each failed challenge with stronger evidence.
+
+### Detecting Challenge Mode
+
+You are in challenge mode when the prompt contains:
+```
+CHALLENGE FAILED - REWORK REQUIRED
+Round: N/3
+```
+
+### Challenge Response Workflow
+
+```
+1. Parse the failed challenges from the prompt
+2. For EACH failed challenge:
+   a. Understand what was expected
+   b. Re-examine your original claim
+   c. Execute verification code if needed
+   d. Gather stronger evidence or acknowledge error
+3. Signal completion with enhanced evidence
+4. Use challenge-specific markers in output
+```
+
+### Challenge Response Markers
+
+Use these markers when responding to challenges:
+
+```python
+# For each challenge addressed
+print("[CHALLENGE_RESPONSE:1] Addressing: 'baseline accuracy not provided'")
+print("[VERIFICATION] Running dummy classifier...")
+baseline_acc = DummyClassifier(strategy='most_frequent').fit(X_train, y_train).score(X_test, y_test)
+print(f"[METRIC:baseline_accuracy] {baseline_acc:.3f}")
+
+# Show reproducible verification code
+print("[VERIFICATION_CODE]")
+print("```python")
+print("# Cross-validation verification")
+print("from sklearn.model_selection import cross_val_score")
+print("scores = cross_val_score(model, X, y, cv=5)")
+print("print(f'CV Accuracy: {scores.mean():.3f} +/- {scores.std():.3f}')")
+print("```")
+
+# Independent cross-check
+print("[INDEPENDENT_CHECK] Cross-validated with 5 different seeds")
+for seed in [42, 123, 456, 789, 1011]:
+    cv_score = cross_val_score(model, X, y, cv=5, random_state=seed).mean()
+    print(f"  Seed {seed}: {cv_score:.3f}")
+```
+
+### Evidence Enhancement Protocol
+
+When challenged, provide STRONGER evidence than before:
+
+| Original Evidence | Enhanced Evidence |
+|-------------------|-------------------|
+| Single accuracy number | CV mean ± std across 5 folds |
+| "Model trained" | Training code + saved model path |
+| "Good correlation" | Correlation value + p-value + scatter plot |
+| "Cleaned data" | Before/after row counts + cleaning steps |
+
+### Example Challenge Response
+
+**Gyoshu sends:**
+```
+@jogyo CHALLENGE FAILED - REWORK REQUIRED
+
+Round: 1/3
+Previous Trust Score: 45
+
+Failed Challenges:
+1. Baseline accuracy not provided
+   - Expected: Dummy classifier baseline for context
+   - Found: Only final model accuracy reported
+
+2. No cross-validation performed
+   - Expected: CV results with mean ± std
+   - Found: Single train/test split result
+
+Required Actions:
+- Calculate dummy classifier baseline accuracy
+- Run 5-fold cross-validation and report mean±std
+```
+
+**Your response should:**
+```python
+print("[CHALLENGE_RESPONSE:1] Addressing: baseline accuracy not provided")
+from sklearn.dummy import DummyClassifier
+dummy = DummyClassifier(strategy='most_frequent')
+dummy.fit(X_train, y_train)
+baseline = dummy.score(X_test, y_test)
+print(f"[METRIC:baseline_accuracy] {baseline:.3f}")
+print(f"[FINDING] Baseline (most-frequent): {baseline:.1%}")
+
+print("[CHALLENGE_RESPONSE:2] Addressing: no cross-validation performed")
+from sklearn.model_selection import cross_val_score
+cv_scores = cross_val_score(model, X, y, cv=5)
+print(f"[METRIC:cv_accuracy_mean] {cv_scores.mean():.3f}")
+print(f"[METRIC:cv_accuracy_std] {cv_scores.std():.3f}")
+print(f"[FINDING] 5-fold CV: {cv_scores.mean():.1%} ± {cv_scores.std():.1%}")
+
+print("[VERIFICATION_CODE]")
+print("Reproducible cross-validation:")
+print(f"  Model: {type(model).__name__}")
+print(f"  CV folds: 5")
+print(f"  Results: {cv_scores}")
+
+# Compare to baseline
+improvement = cv_scores.mean() - baseline
+print(f"[METRIC:improvement_over_baseline] {improvement:.3f}")
+print(f"[CONCLUSION] Model improves {improvement:.1%} over baseline")
+```
+
+**Then signal updated completion:**
+```
+gyoshu_completion(
+  researchSessionID: "<session-id>",
+  status: "SUCCESS",
+  summary: "Model achieves 78% ± 3% CV accuracy, 1% improvement over 77% baseline",
+  evidence: {
+    executedCellIds: ["cell_001", ..., "cell_010"],
+    keyResults: [
+      {"name": "cv_accuracy_mean", "value": "0.78", "type": "float"},
+      {"name": "cv_accuracy_std", "value": "0.03", "type": "float"},
+      {"name": "baseline_accuracy", "value": "0.77", "type": "float"},
+      {"name": "improvement_over_baseline", "value": "0.01", "type": "float"}
+    ],
+    artifactPaths: ["reports/churn-analysis/confusion_matrix.png"]
+  },
+  challengeRound: 1,
+  challengeResponses: [
+    {
+      "challengeId": "1",
+      "response": "Added baseline accuracy calculation using DummyClassifier",
+      "verificationCode": "dummy = DummyClassifier(strategy='most_frequent')..."
+    },
+    {
+      "challengeId": "2",
+      "response": "Added 5-fold cross-validation with mean ± std",
+      "verificationCode": "cv_scores = cross_val_score(model, X, y, cv=5)..."
+    }
+  ]
+)
+```
+
+### Acknowledging Errors
+
+Sometimes challenges reveal genuine errors. Be honest:
+
+```python
+print("[CHALLENGE_RESPONSE:1] Addressing: accuracy seems too high")
+print("[ACKNOWLEDGMENT] Original claim was incorrect")
+print("[ERROR_FOUND] Data leakage detected - test data was in training set")
+
+# Fix the issue
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Retrain on clean split...
+
+print("[CORRECTION] After fixing data leakage:")
+print(f"[METRIC:corrected_accuracy] {new_accuracy:.3f}")
+print("[FINDING] Corrected accuracy is 72%, not 95% as originally claimed")
+```
+
+### Maximum Rework Rounds
+
+- You have maximum 3 rounds to satisfy challenges
+- Each round should show measurable progress
+- If you cannot address a challenge, explain why honestly
+- Better to acknowledge limitations than claim false success
 
 ## REPL Mode
 
