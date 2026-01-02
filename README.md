@@ -1,279 +1,232 @@
-# Gyoshu
+# 🎓 Gyoshu & Jogyo
 
-Scientific research agent extension for OpenCode. Enables hypothesis-driven research with Python REPL, structured output markers, and Jupyter notebook integration.
+> *"Every great professor needs a great teaching assistant."*
 
-## Features
+**Gyoshu** (교수, *Professor*) orchestrates. **Jogyo** (조교, *Teaching Assistant*) executes.
 
-- **Persistent REPL Environment**: Variables persist across research steps
-- **Structured Output Markers**: Categorized output for easy parsing (HYPOTHESIS, FINDING, METRIC, etc.)
-- **Jupyter Notebook Integration**: Research saved as reproducible notebooks
-- **Session Management**: Create, continue, and replay research sessions
-- **Scientific Skills**: Built-in patterns for data analysis, experiment design, and scientific method
+Together, they form an end-to-end research automation system for [OpenCode](https://github.com/opencode-ai/opencode) that turns your research goals into reproducible Jupyter notebooks—complete with hypotheses, experiments, findings, and publication-ready reports.
 
-## Installation
+---
 
-Gyoshu is an OpenCode extension. To install:
+## 🎭 The Cast
 
-> **Note**: The GitHub repository is currently named `VibeSci`. The URLs below will be updated after the repository rename to `Gyoshu`.
+| Agent | Role | Korean | What They Do |
+|-------|------|--------|--------------|
+| **Gyoshu** | 🎩 Professor | 교수 | Plans research, orchestrates workflow, manages sessions |
+| **Jogyo** | 📚 Teaching Assistant | 조교 | Executes Python code, runs experiments, generates outputs |
+| **Jogyo Paper Writer** | ✍️ Grad Student | 조교 | Transforms raw findings into narrative research reports |
 
-### One-click global installation
+Think of it like a research lab:
+- The **Professor** (Gyoshu) sets the research direction and reviews progress
+- The **TA** (Jogyo) does the actual experiments and analysis
+- When it's time to publish, another **Grad Student** writes up the findings beautifully
+
+---
+
+## ✨ Features
+
+- 🔬 **Hypothesis-Driven Research** — Structure your work with `[OBJECTIVE]`, `[HYPOTHESIS]`, `[FINDING]` markers
+- 🐍 **Persistent Python REPL** — Variables survive across sessions, just like a real Jupyter kernel
+- 📓 **Auto-Generated Notebooks** — Every experiment is captured as a reproducible `.ipynb`
+- 🤖 **Autonomous Mode** — Set a goal, walk away, come back to results
+- 📝 **AI-Powered Reports** — Turn messy outputs into polished research narratives
+- 🔄 **Session Management** — Continue, replay, or branch your research anytime
+
+---
+
+## 🚀 One-Click Installation
+
+### Option 1: curl (Recommended)
 
 ```bash
-# One-click global installation
-curl -fsSL https://raw.githubusercontent.com/Yeachan-Heo/VibeSci/main/install.sh | bash
-
-# Or clone and install
-git clone https://github.com/Yeachan-Heo/VibeSci.git
-cd VibeSci && ./install.sh
+curl -fsSL https://raw.githubusercontent.com/Yeachan-Heo/My-Jogyo/main/install.sh | bash
 ```
 
-### Manual Installation
-
-To install Gyoshu manually:
-
-1. Copy the `.opencode/` directory to your project root
-2. Or copy to `~/.config/opencode/` for global availability
+### Option 2: Clone & Install
 
 ```bash
-# Project-level installation
+git clone https://github.com/Yeachan-Heo/My-Jogyo.git
+cd My-Jogyo && ./install.sh
+```
+
+### Option 3: Manual Installation
+
+```bash
+# Copy to your project (local)
 cp -r .opencode/ /path/to/your/project/
 
-# Global installation
+# Or install globally
 mkdir -p ~/.config/opencode/
 cp -r .opencode/* ~/.config/opencode/
 ```
 
-## Quick Start
+---
+
+## 🏃 Quick Start
 
 ```bash
 # Start OpenCode
 opencode
 
-# Show status and suggestions
+# 👋 Say hi to the Professor
 /gyoshu
 
-# Start new research
-/gyoshu analyze the iris dataset for clustering patterns
+# 🎯 Start a new research project
+/gyoshu analyze customer churn patterns in the telecom dataset
 
-# Continue research
-/gyoshu continue
+# 🤖 Or let it run autonomously (hands-off!)
+/gyoshu-auto classify iris species using random forest
 
-# Generate report
+# 📊 Generate a report
 /gyoshu report
 
-# For autonomous hands-off research
-/gyoshu-auto cluster wine quality factors
+# 🔄 Continue where you left off
+/gyoshu continue
 ```
 
-## Commands
-
-Gyoshu uses **two commands** for all research operations:
-
-| Command | Description |
-|---------|-------------|
-| `/gyoshu` | Unified research command with subcommands |
-| `/gyoshu-auto <goal>` | Autonomous hands-off research (bounded cycles) |
-
-### `/gyoshu` Subcommands
-
-| Usage | Description |
-|-------|-------------|
-| `/gyoshu` | Show status and suggestions |
-| `/gyoshu <goal>` | Start interactive research with discovery |
-| `/gyoshu plan <goal>` | Create research plan only |
-| `/gyoshu continue [id]` | Continue existing research |
-| `/gyoshu list [--status X]` | List all researches |
-| `/gyoshu search <query>` | Search researches & notebooks |
-| `/gyoshu report [id]` | Generate research report |
-| `/gyoshu repl <query>` | Direct REPL exploration |
-| `/gyoshu migrate [--options]`| Migrate legacy sessions |
-| `/gyoshu replay <sessionId>` | Replay for reproducibility |
-| `/gyoshu unlock <sessionId>` | Unlock stuck session |
-| `/gyoshu abort` | Abort current research |
-| `/gyoshu help` | Show usage and examples |
-
-## Research Modes
-
-Gyoshu supports three orchestration modes:
-
-| Mode | Command | Description |
-|------|---------|-------------|
-| **Interactive** | `/gyoshu <goal>` | Default mode. Searches for similar research, offers to continue or start fresh. Step-by-step control. |
-| **Autonomous** | `/gyoshu-auto <goal>` | Hands-off execution with bounded cycles (max 10). Runs until completion, blocked, or budget exhausted. |
-| **REPL** | `/gyoshu repl <query>` | Direct REPL access for exploration. More autonomy, can explore tangentially. |
-
-### Mode Selection Guide
-
-- Use **Interactive** when: You want discovery + step-by-step control over research direction
-- Use **Autonomous** when: You have a clear goal and want hands-off execution
-- Use **REPL** when: You need quick exploration or debugging
-
-## Agents
-
-### gyoshu (Primary)
-The main orchestrator. Switch to it with Tab. Controls:
-- Research workflow
-- REPL lifecycle (new vs continue)
-- Session management
-
-### jogyo (Subagent)
-The research executor. Invoked by planner via @jogyo. Handles:
-- Python code execution
-- Structured output with markers
-- Data analysis and visualization
-
-## Output Markers
-
-Gyoshu uses structured markers for organized output:
-
-### Research Process
-- `[OBJECTIVE]` - Research goal
-- `[HYPOTHESIS]` - Proposed explanation
-- `[EXPERIMENT]` - Procedure
-- `[OBSERVATION]` - Raw observations
-- `[ANALYSIS]` - Interpretation
-- `[CONCLUSION]` - Final conclusions
-
-### Data and Calculations
-- `[DATA]` - Data description
-- `[SHAPE]` - Dimensions
-- `[METRIC]` - Named metrics
-- `[STAT]` - Statistics
-- `[CORR]` - Correlations
-
-### Insights
-- `[FINDING]` - Key discoveries
-- `[INSIGHT]` - Interpretations
-- `[PATTERN]` - Identified patterns
-
-### Scientific
-- `[LIMITATION]` - Known limitations
-- `[NEXT_STEP]` - Follow-up actions
-- `[DECISION]` - Research decisions
-
-## Skills
-
-Load skills for specialized guidance:
-
-- `scientific-method` - Hypothesis-driven research framework
-- `data-analysis` - Data loading, EDA, statistical tests
-- `experiment-design` - Reproducibility, controls, A/B testing
-
-## Architecture
-
-```
-.opencode/
-├── agent/
-│   ├── jogyo.md                # Research executor
-│   └── gyoshu.md               # Planner for research orchestration
-├── command/
-│   ├── gyoshu.md               # Unified research command
-│   └── gyoshu-auto.md          # Autonomous mode
-├── tool/
-│   ├── research-manager.ts     # Research & frontmatter scanning
-│   ├── python-repl.ts          # REPL with notebook auto-capture
-│   ├── notebook-writer.ts      # Tagged notebook generation
-│   ├── session-manager.ts      # Runtime session locking
-│   └── migration-tool.ts       # Notebook-centric migration
-├── lib/
-│   ├── notebook-frontmatter.ts # YAML metadata parsing
-│   ├── readme-index.ts         # Sentinel-based index generation
-│   └── paths.ts                # Profile-aware path resolver
-├── bridge/
-│   └── gyoshu_bridge.py        # Python execution bridge
-└── skill/
-    └── ...                     # Research skills
-```
-
-## Research Storage
-
-Gyoshu uses a **notebook-centric architecture** where research metadata is stored directly in Jupyter notebooks using YAML frontmatter.
-
-### Directory Structure
-
-```
-Gyoshu/
-├── notebooks/                    # Research notebooks (*.ipynb)
-│   └── README.md                 # Auto-generated index
-└── reports/                      # Research reports and artifacts
-    └── {reportTitle}/            # Figures, models, report.md
-```
-
-### Runtime Data (Ephemeral)
-
-Runtime data (session locks, bridge sockets) is stored in OS-appropriate temp directories, NOT in the project root:
-
-- **Linux**: `$XDG_RUNTIME_DIR/gyoshu/` or `~/.cache/gyoshu/runtime/`
-- **macOS**: `~/Library/Caches/gyoshu/runtime/`
-- **Override**: Set `GYOSHU_RUNTIME_DIR` environment variable
-
-Session IDs are hashed to 12 characters for Unix socket path limits.
-
-### Self-Describing Notebooks
-
-Each notebook contains its own metadata in the first cell:
-
-```yaml
 ---
-gyoshu:
-  reportTitle: churn-prediction
-  status: active
-  tags: [ml, classification]
+
+## 📖 Commands
+
+### The Professor's Commands (`/gyoshu`)
+
+| Command | What It Does |
+|---------|--------------|
+| `/gyoshu` | Show status and what to do next |
+| `/gyoshu <goal>` | Start interactive research |
+| `/gyoshu-auto <goal>` | Autonomous mode (set it and forget it!) |
+| `/gyoshu plan <goal>` | Just create a plan, don't execute |
+| `/gyoshu continue` | Pick up where you left off |
+| `/gyoshu report` | Generate research report |
+| `/gyoshu list` | See all your research projects |
+| `/gyoshu search <query>` | Find stuff across all notebooks |
+
+### Research Modes
+
+| Mode | Best For | Command |
+|------|----------|---------|
+| 🎓 **Interactive** | Learning, exploring, iterating | `/gyoshu <goal>` |
+| 🤖 **Autonomous** | Clear goals, hands-off execution | `/gyoshu-auto <goal>` |
+| 🔧 **REPL** | Quick exploration, debugging | `/gyoshu repl <query>` |
+
 ---
+
+## 🔬 How Research Works
+
+### 1. You Set a Goal
+```
+/gyoshu analyze wine quality factors and build a predictive model
 ```
 
-> **Migration Note**: Legacy research stored at `gyoshu/research/` or `~/.gyoshu/sessions/` is still supported. Use `/gyoshu migrate --to-notebooks` to move to the new structure.
+### 2. The Professor Plans
+Gyoshu creates a structured research plan with clear objectives and hypotheses.
 
-## Example Workflow
+### 3. The TA Executes
+Jogyo runs Python code, using structured markers to organize output:
 
 ```python
-# In the REPL (executed by @jogyo)
+print("[OBJECTIVE] Predict wine quality from physicochemical properties")
+print("[HYPOTHESIS] Alcohol content is the strongest predictor")
 
-print("[OBJECTIVE] Identify factors affecting iris species classification")
+# ... analysis code ...
 
-import pandas as pd
-from sklearn.datasets import load_iris
-
-iris = load_iris()
-df = pd.DataFrame(iris.data, columns=iris.feature_names)
-df['species'] = iris.target
-
-print(f"[DATA] Loaded iris dataset")
-print(f"[SHAPE] {df.shape[0]} samples, {df.shape[1]} features")
-
-print("[HYPOTHESIS] Petal dimensions are most discriminative for species")
-
-corr = df.corr()['species'].drop('species').abs().sort_values(ascending=False)
-print(f"[CORR] Feature correlations with species:")
-print(corr)
-
-print(f"[FINDING] Petal length (r={corr['petal length (cm)']:.3f}) most correlated")
-print("[CONCLUSION:confidence=0.95] Hypothesis supported - petal dimensions are most discriminative")
+print(f"[METRIC:accuracy] {accuracy:.3f}")
+print("[FINDING] Alcohol shows r=0.47 correlation with quality")
+print("[CONCLUSION] Hypothesis supported - alcohol is key predictor")
 ```
 
-## Python Environment Support
+### 4. Auto-Generated Notebook
+Everything is captured in `notebooks/wine-quality.ipynb` with full reproducibility.
 
-Gyoshu automatically detects and uses isolated Python environments for reproducibility:
+### 5. AI-Written Report
+The Paper Writer agent transforms markers into a narrative report:
 
-| Detection Priority | Environment Type | Detection Method |
-|-------------------|------------------|------------------|
-| 1 | Custom | `GYOSHU_PYTHON_PATH` env var |
-| 2 | venv | `./venv`, `./.venv`, or `./gyoshu/venv` |
-| 3 | uv | `uv.lock` or `[tool.uv]` in pyproject.toml |
-| 4 | poetry | `poetry.lock` or `[tool.poetry]` in pyproject.toml |
-| 5 | conda | `environment.yml` or `environment.yaml` |
+> *"Our analysis of 1,599 wine samples revealed that alcohol content emerges as the dominant predictor of quality ratings (r = 0.47). The final Random Forest model achieved 87% accuracy..."*
 
-When no environment exists, Gyoshu creates one using the fastest available tool (uv > poetry > conda > venv) and installs core research packages (pandas, numpy, scikit-learn, matplotlib, seaborn).
+---
 
-> Gyoshu never uses system Python directly - it always ensures isolated virtual environments.
+## 📁 Project Structure
 
-## Requirements
+```
+your-project/
+├── notebooks/                    # 📓 Research notebooks
+│   ├── wine-quality.ipynb
+│   └── customer-churn.ipynb
+├── reports/                      # 📝 Generated reports
+│   └── wine-quality/
+│       ├── README.md             # AI-written narrative report
+│       ├── figures/              # Saved plots
+│       └── models/               # Saved models
+├── data/                         # 📊 Your datasets
+└── .venv/                        # 🐍 Python environment
+```
 
-- OpenCode v0.1.0+
-- Python 3.10+ (for match statements in bridge)
-- Optional: psutil (for memory tracking)
-- Optional: uv, poetry, or conda (for faster environment creation)
+**Runtime files** (sockets, locks) go to OS temp directories—not your project! 🧹
 
-## License
+---
 
-MIT
+## 🎯 Output Markers
+
+The TA uses structured markers to organize research output:
+
+| Marker | Purpose | Example |
+|--------|---------|---------|
+| `[OBJECTIVE]` | Research goal | `[OBJECTIVE] Classify iris species` |
+| `[HYPOTHESIS]` | What you're testing | `[HYPOTHESIS] Petal length is most predictive` |
+| `[DATA]` | Dataset info | `[DATA] Loaded 150 samples` |
+| `[METRIC:name]` | Quantitative results | `[METRIC:accuracy] 0.95` |
+| `[FINDING]` | Key discovery | `[FINDING] Setosa is linearly separable` |
+| `[CONCLUSION]` | Final verdict | `[CONCLUSION] Hypothesis confirmed` |
+
+---
+
+## 🐍 Python Environment
+
+Gyoshu auto-detects your Python environment:
+
+| Priority | Type | How It's Detected |
+|----------|------|-------------------|
+| 1️⃣ | Custom | `GYOSHU_PYTHON_PATH` env var |
+| 2️⃣ | venv | `.venv/` directory |
+| 3️⃣ | uv | `uv.lock` file |
+| 4️⃣ | poetry | `poetry.lock` file |
+| 5️⃣ | conda | `environment.yml` file |
+
+No environment? No problem! The installer creates one for you.
+
+---
+
+## 🛠️ Requirements
+
+- **OpenCode** v0.1.0+
+- **Python** 3.10+ 
+- **Optional**: `psutil` (for memory tracking), `uv`/`poetry`/`conda` (for faster env creation)
+
+---
+
+## 🎓 Why "Gyoshu" and "Jogyo"?
+
+In Korean academia:
+
+- **교수 (Gyoshu/Kyosu)** = Professor — the one who guides, plans, and oversees
+- **조교 (Jogyo)** = Teaching Assistant — the one who executes, experiments, and does the heavy lifting
+
+This reflects the architecture: Gyoshu is the orchestrator agent that plans and manages research flow, while Jogyo is the executor agent that actually runs Python code and produces results.
+
+It's a partnership. The Professor has the vision. The TA makes it happen. Together, they publish papers. 📚
+
+---
+
+## 📄 License
+
+MIT — Use it, fork it, teach with it!
+
+---
+
+<div align="center">
+
+**Made with 🎓 for researchers who'd rather think than type**
+
+[Report Bug](https://github.com/Yeachan-Heo/My-Jogyo/issues) · [Request Feature](https://github.com/Yeachan-Heo/My-Jogyo/issues) · [Documentation](https://github.com/Yeachan-Heo/My-Jogyo/wiki)
+
+</div>
