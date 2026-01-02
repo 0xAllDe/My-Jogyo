@@ -14,12 +14,14 @@ Together, they form an end-to-end research automation system for [OpenCode](http
 |-------|------|--------|--------------|
 | **Gyoshu** | 🎩 Professor | 교수 | Plans research, orchestrates workflow, manages sessions |
 | **Jogyo** | 📚 Teaching Assistant | 조교 | Executes Python code, runs experiments, generates outputs |
+| **Baksa** | 🔍 PhD Reviewer | 박사 | Adversarial verifier — challenges claims, calculates trust scores |
 | **Jogyo Paper Writer** | ✍️ Grad Student | 조교 | Transforms raw findings into narrative research reports |
 
 Think of it like a research lab:
 - The **Professor** (Gyoshu) sets the research direction and reviews progress
 - The **TA** (Jogyo) does the actual experiments and analysis
-- When it's time to publish, another **Grad Student** writes up the findings beautifully
+- The **PhD Reviewer** (Baksa) plays devil's advocate, questioning every claim
+- When it's time to publish, a **Grad Student** writes up the findings beautifully
 
 ---
 
@@ -29,6 +31,7 @@ Think of it like a research lab:
 - 🐍 **Persistent Python REPL** — Variables survive across sessions, just like a real Jupyter kernel
 - 📓 **Auto-Generated Notebooks** — Every experiment is captured as a reproducible `.ipynb`
 - 🤖 **Autonomous Mode** — Set a goal, walk away, come back to results
+- 🔍 **Adversarial Verification** — PhD reviewer challenges every claim before acceptance
 - 📝 **AI-Powered Reports** — Turn messy outputs into polished research narratives
 - 🔄 **Session Management** — Continue, replay, or branch your research anytime
 
