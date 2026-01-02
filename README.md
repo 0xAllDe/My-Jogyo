@@ -217,6 +217,62 @@ It's a partnership. The Professor has the vision. The TA makes it happen. Togeth
 
 ---
 
+## 🤝 Better Together: Oh-My-OpenCode + My-Jogyo
+
+For **data-driven product development**, combine My-Jogyo with [Oh-My-OpenCode](https://github.com/Yeachan-Heo/oh-my-opencode):
+
+| Tool | Focus | Best For |
+|------|-------|----------|
+| **[Oh-My-OpenCode](https://github.com/Yeachan-Heo/oh-my-opencode)** | 🏗️ Product Development | Building features, writing code, shipping products |
+| **My-Jogyo** | 📊 Data Analysis | Research, experiments, insights, ML models |
+
+### The Synergy
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                 Data-Driven Product Development             │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│   📊 My-Jogyo                    🏗️ Oh-My-OpenCode          │
+│   ───────────                    ─────────────────          │
+│   "Why are users churning?"  →   "Build retention feature"  │
+│   "Which features matter?"   →   "Prioritize roadmap"       │
+│   "A/B test results"         →   "Ship winning variant"     │
+│   "Model predictions"        →   "Integrate ML endpoint"    │
+│                                                             │
+│   Research & Insights        →   Implementation & Shipping  │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Install Both
+
+```bash
+# Install My-Jogyo (research & analysis)
+curl -fsSL https://raw.githubusercontent.com/Yeachan-Heo/My-Jogyo/main/install.sh | bash
+
+# Install Oh-My-OpenCode (product development)
+curl -fsSL https://raw.githubusercontent.com/Yeachan-Heo/oh-my-opencode/main/install.sh | bash
+```
+
+### Example Workflow
+
+1. **Analyze** with My-Jogyo:
+   ```
+   /gyoshu-auto analyze user behavior and identify churn predictors
+   ```
+   → Produces insights: "Users who don't use feature X within 7 days have 3x churn rate"
+
+2. **Build** with Oh-My-OpenCode:
+   ```
+   /planner implement onboarding flow that guides users to feature X
+   ```
+   → Ships the feature that addresses the insight
+
+**Data informs decisions. Code ships solutions.** 🚀
+
+---
+
 ## 📄 License
 
 MIT — Use it, fork it, teach with it!
