@@ -1,9 +1,9 @@
 ---
 mode: subagent
 description: Adversarial PhD reviewer that challenges Jogyo's research claims and verifies evidence
-model: anthropic/claude-sonnet-4-5
-temperature: 0.4
-maxSteps: 10
+model: anthropic/claude-opus-4-5-high
+temperature: 0.3
+maxSteps: 15
 tools:
   read: true
   python-repl: true
