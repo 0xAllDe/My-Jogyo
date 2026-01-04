@@ -1,5 +1,7 @@
 # 🎓 Gyoshu & Jogyo
 
+**English** | [中文](README.zh.md) | [한국어](README.ko.md) | [日本語](README.ja.md)
+
 > *"Every great professor needs a great teaching assistant."*
 
 **Gyoshu** (교수, *Professor*) orchestrates. **Jogyo** (조교, *Teaching Assistant*) executes.
@@ -70,6 +72,31 @@ cp -r My-Jogyo/src/* ~/.config/opencode/
 
 ---
 
+## 🤖 Installation for LLMs
+
+> *Using Claude, GPT, Gemini, or another AI assistant with OpenCode? This section is for you.*
+
+**Setup is the same** — install Gyoshu using the methods above, then give your LLM the context it needs:
+
+1. **Point your LLM to the guide:**
+   > "Read `AGENTS.md` in the Gyoshu directory for full context on how to use the research tools."
+
+2. **Or paste this quick start prompt:**
+   ```
+   I've installed Gyoshu. Read AGENTS.md and help me run /gyoshu to analyze my data.
+   ```
+
+**Key commands your LLM should know:**
+| Command | What It Does |
+|---------|--------------|
+| `/gyoshu` | Start interactive research |
+| `/gyoshu-auto <goal>` | Autonomous research (hands-off) |
+| `/gyoshu doctor` | Check system health and diagnose issues |
+
+> **Tip:** [AGENTS.md](AGENTS.md) contains everything an LLM needs — agents, commands, markers, troubleshooting, and more.
+
+---
+
 ## 🏃 Quick Start
 
 ```bash
@@ -108,6 +135,7 @@ opencode
 | `/gyoshu report` | Generate research report |
 | `/gyoshu list` | See all your research projects |
 | `/gyoshu search <query>` | Find stuff across all notebooks |
+| `/gyoshu doctor` | Check system health and diagnose issues |
 
 ### Research Modes
 

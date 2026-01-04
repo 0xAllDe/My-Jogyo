@@ -278,6 +278,7 @@ The main entry point for all research operations. Supports subcommands and direc
  | `replay <sessionId>` | Replay for reproducibility | `/gyoshu replay ses_abc123` |
  | `unlock <sessionId>` | Unlock stuck session | `/gyoshu unlock ses_abc123` |
  | `abort [sessionId]` | Abort current research | `/gyoshu abort` |
+ | `doctor` | Check system health and diagnose issues | `/gyoshu doctor` |
  | `help` | Show usage and examples | `/gyoshu help` |
 
 ### `/gyoshu-auto` - Autonomous Research
