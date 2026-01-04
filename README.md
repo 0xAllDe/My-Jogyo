@@ -121,6 +121,29 @@ opencode
 
 ---
 
+## 📚 Examples
+
+See the [`examples/`](examples/) directory for complete worked examples:
+
+| Example | Type | What It Shows |
+|---------|------|---------------|
+| [COVID-19 EDA](examples/01-covid-eda/) | Exploratory Data Analysis | Kaggle data download, comprehensive EDA, multi-dimensional visualization |
+
+### Try It Yourself
+
+```bash
+# COVID-19 analysis (requires Kaggle credentials)
+/gyoshu-auto Download kaggle COVID-19 dataset and perform comprehensive EDA
+
+# Titanic classification (classic ML workflow)
+/gyoshu-auto analyze Titanic survival data and build classification model
+
+# Iris clustering (no download needed - sklearn built-in)
+/gyoshu-auto cluster iris dataset and visualize results
+```
+
+---
+
 ## 📖 Commands
 
 ### The Professor's Commands (`/gyoshu`)
