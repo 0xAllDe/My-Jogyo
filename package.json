@@ -1,24 +1,64 @@
 {
   "name": "gyoshu",
   "version": "0.1.0",
-  "description": "Scientific research agent extension for OpenCode",
+  "description": "Scientific research agent extension for OpenCode - turns research goals into reproducible Jupyter notebooks",
   "type": "module",
+  "bin": {
+    "gyoshu": "./bin/gyoshu.js"
+  },
+  "files": [
+    "bin/",
+    "src/agent/*.md",
+    "src/command/*.md",
+    "src/tool/*.ts",
+    "src/skill/*/SKILL.md",
+    "src/bridge/*.py",
+    "src/lib/*.ts",
+    "src/plugin/*.ts",
+    "install.sh",
+    "AGENTS.md"
+  ],
   "scripts": {
-    "test": "bun test ./tests ./.opencode/lib ./.opencode/tool",
-    "test:watch": "bun test --watch ./tests ./.opencode/lib ./.opencode/tool"
+    "test": "bun test ./tests",
+    "test:watch": "bun test --watch ./tests",
+    "test:python": "pytest tests/test_bridge.py -v"
   },
-  "devDependencies": {
-    "@types/node": "^20.0.0",
-    "bun-types": "latest"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yeachan-Heo/My-Jogyo.git"
   },
+  "homepage": "https://github.com/Yeachan-Heo/My-Jogyo#readme",
+  "bugs": {
+    "url": "https://github.com/Yeachan-Heo/My-Jogyo/issues"
+  },
+  "author": "Yeachan Heo",
+  "license": "MIT",
   "keywords": [
     "opencode",
     "research",
     "scientific",
     "jupyter",
-    "repl"
+    "repl",
+    "data-science",
+    "machine-learning",
+    "ai-agent",
+    "automation",
+    "notebook"
   ],
-  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "peerDependencies": {
+    "@opencode-ai/plugin": ">=1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "bun-types": "latest"
+  },
   "dependencies": {
     "zod": "^4.3.4"
   }

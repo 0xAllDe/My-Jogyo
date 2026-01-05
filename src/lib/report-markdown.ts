@@ -24,12 +24,19 @@ import { parseMarkers, ParsedMarker, getMarkersByType } from "./marker-parser";
 import { Notebook, NotebookCell } from "./cell-identity";
 import { extractFrontmatter, GyoshuFrontmatter } from "./notebook-frontmatter";
 import { getNotebookPath, getReportDir, getReportReadmePath, getReportsRootDir } from "./paths";
-import { 
-  Citation, 
-  getCitationByDOI, 
-  getArxivPaper, 
-  formatCitationAPA 
-} from "./literature-client";
+// Literature client deprecated - citations now use fallback identifiers only
+// TODO: Re-enable when a reliable citation API is available
+
+/**
+ * Minimal citation interface for fallback mode.
+ */
+interface Citation {
+  doi?: string;
+  arxivId?: string;
+  title?: string;
+  authors?: string[];
+  year?: number;
+}
 
 // =============================================================================
 // FINDING VERIFICATION - Separate verified vs unverified findings
@@ -218,64 +225,15 @@ export function collectCitationIdentifiers(markers: ParsedMarker[]): string[] {
   return identifiers;
 }
 
-/**
- * Resolve citation identifiers to full citation metadata.
- *
- * Uses getCitationByDOI for DOIs and getArxivPaper for arXiv IDs.
- * Failed resolutions return null citation with a fallback formatted string.
- *
- * @param identifiers - Array of citation identifiers (DOIs or arXiv IDs)
- * @returns Array of resolved citations with formatted strings
- */
 export async function resolveCitations(identifiers: string[]): Promise<ResolvedCitation[]> {
-  const results: ResolvedCitation[] = [];
-
-  for (let i = 0; i < identifiers.length; i++) {
-    const identifier = identifiers[i];
-    const number = i + 1;
-
-    try {
-      let citation: Citation | null = null;
-
-      if (isArxivId(identifier)) {
-        citation = await getArxivPaper(identifier);
-      } else {
-        // Assume it's a DOI
-        citation = await getCitationByDOI(identifier);
-      }
-
-      if (citation) {
-        results.push({
-          identifier,
-          number,
-          citation,
-          formatted: formatCitationAPA(citation),
-        });
-      } else {
-        // Resolution failed - provide fallback
-        results.push({
-          identifier,
-          number,
-          citation: null,
-          formatted: isArxivId(identifier)
-            ? `arXiv:${identifier}`
-            : `https://doi.org/${identifier}`,
-        });
-      }
-    } catch (error) {
-      // API error - provide fallback
-      results.push({
-        identifier,
-        number,
-        citation: null,
-        formatted: isArxivId(identifier)
-          ? `arXiv:${identifier}`
-          : `https://doi.org/${identifier}`,
-      });
-    }
-  }
-
-  return results;
+  return identifiers.map((identifier, i) => ({
+    identifier,
+    number: i + 1,
+    citation: null,
+    formatted: isArxivId(identifier)
+      ? `arXiv:${identifier}`
+      : `https://doi.org/${identifier}`,
+  }));
 }
 
 export interface ArtifactEntry {

@@ -1,0 +1,45 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Tests
+tests/
+*.test.ts
+*.test.js
+
+# Development
+.git/
+.github/
+.vscode/
+.idea/
+
+# Plans and docs (keep only essential)
+plans/
+docs/
+examples/
+README.ja.md
+README.ko.md
+README.zh.md
+
+# Config files
+.gitignore
+.eslintrc*
+.prettierrc*
+tsconfig.json
+pyproject.toml
+opencode.json
+config/
+
+# Build artifacts
+*.log
+.DS_Store
+src/node_modules/
+src/bun.lock
+src/package.json
+.venv/
+
+# Data
+data/
+notebooks/
+reports/

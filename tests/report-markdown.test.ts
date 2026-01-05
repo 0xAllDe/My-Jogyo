@@ -11,9 +11,9 @@ import {
   ArtifactEntry,
   MetricEntry,
   ReportModel,
-} from "./report-markdown";
-import { Notebook } from "./cell-identity";
-import { GyoshuFrontmatter } from "./notebook-frontmatter";
+} from "../src/lib/report-markdown";
+import { Notebook } from "../src/lib/cell-identity";
+import { GyoshuFrontmatter } from "../src/lib/notebook-frontmatter";
 
 // =============================================================================
 // TEST FIXTURES
