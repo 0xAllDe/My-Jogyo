@@ -135,6 +135,9 @@ export interface AutoLoopState {
  * // Returns: "/home/user/my-project/reports/customer-churn/auto/loop-state.json"
  */
 export function getAutoLoopStatePath(reportTitle: string): string {
+  if (!reportTitle || typeof reportTitle !== "string") {
+    throw new Error("reportTitle is required for getAutoLoopStatePath");
+  }
   return path.join(getReportDir(reportTitle), "auto", "loop-state.json");
 }
 
@@ -161,6 +164,10 @@ export function getAutoLoopStatePath(reportTitle: string): string {
  * ```
  */
 export async function loadState(reportTitle: string): Promise<AutoLoopState | null> {
+  if (!reportTitle || typeof reportTitle !== "string") {
+    return null;
+  }
+
   const statePath = getAutoLoopStatePath(reportTitle);
 
   try {
