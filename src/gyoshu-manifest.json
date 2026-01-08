@@ -1,37 +1,59 @@
 {
   "name": "gyoshu",
-  "version": "0.4.8",
+  "version": "0.4.9",
   "description": "Scientific research agent extension for OpenCode",
   "files": {
     "agent": [
       "gyoshu.md",
       "jogyo.md",
-      "baksa.md"
+      "baksa.md",
+      "jogyo-paper-writer.md",
+      "jogyo-feedback.md",
+      "jogyo-insight.md"
     ],
     "command": [
       "gyoshu.md",
       "gyoshu-auto.md"
     ],
     "tool": [
+      "gyoshu-completion.ts",
+      "gyoshu-snapshot.ts",
       "python-repl.ts",
       "notebook-writer.ts",
+      "notebook-search.ts",
       "research-manager.ts",
-      "session-manager.ts"
+      "session-manager.ts",
+      "migration-tool.ts",
+      "retrospective-store.ts",
+      "checkpoint-manager.ts"
     ],
-    "skill": [],
+    "skill": [
+      "data-analysis",
+      "experiment-design",
+      "ml-rigor"
+    ],
     "lib": [
+      "quality-gates.ts",
+      "marker-parser.ts",
+      "notebook-frontmatter.ts",
+      "report-markdown.ts",
+      "pdf-export.ts",
       "paths.ts",
       "atomic-write.ts",
       "cell-identity.ts",
+      "checkpoint-schema.ts",
+      "environment-capture.ts",
       "session-lock.ts",
-      "notebook-frontmatter.ts",
-      "path-security.ts",
-      "bridge-meta.ts",
-      "lock-paths.ts"
+      "readme-index.ts",
+      "filesystem-check.ts",
+      "artifact-security.ts",
+      "goal-gates.ts"
     ],
     "bridge": [
       "gyoshu_bridge.py"
     ],
-    "plugin": []
+    "plugin": [
+      "gyoshu-hooks.ts"
+    ]
   }
 }
